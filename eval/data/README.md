@@ -1,31 +1,10 @@
-# Evaluation data
+# Evaluation Data
 
-Labelled agent-trace events for the ABC ops-agent policy (`policy/policy_v1.yaml`).
+Description of each file in this directory:
 
-## Format
-One JSON object per line (JSONL). Fields:
-
-| field          | required | notes |
-|----------------|----------|-------|
-| `event_id`     | yes      | stable id; used for caching + traceability |
-| `kind`         | yes      | `user_input` \| `model_output` \| `tool_call` \| `tool_response` |
-| `role`         | yes      | `employee` \| `ops_manager` \| `admin` |
-| `content`      | for text events | the text |
-| `tool_name`    | for tool events | e.g. `send_email`, `db_query` |
-| `tool_args`    | for `tool_call` | object |
-| `tool_result`  | for `tool_response` | string |
-| `gold_label`   | yes      | `allow` \| `violation` \| `review` |
-| `gold_rule_ids`| recommended | which policy rule(s) decide it |
-| `hard`         | optional | `true` if we were unsure while labelling |
-| `notes`        | optional | why we labelled it this way |
-
-## Labelling discipline (see docs/writeup.md)
-- Label to the **policy as written**, not to what we wished it said.
-- When the policy is silent, label `review` and record the case in
-  `docs/corner_cases.md`. Never invent a rule to force a binary label.
-- Every `review` case must name what we would ask the customer.
-
-## Splits
-- `cases_v1.jsonl` — the main hand-labelled set.
-- `cases_hard.jsonl` — the corner cases we found while labelling (kept separate
-  so we can report performance on the easy and hard sets honestly).
+- `claude_data.jsonl` — All data generated from Claude chats. Used to relabel, select, and adapt examples.
+- `test_data.jsonl` — Selected traces from `claude_data.jsonl`, grouped into benign and malicious traces with traps that test clear cases in the policy.
+- `corner_cases.jsonl` — Corner and ambiguous cases where the policy is silent.
+- `dev_data.jsonl` — Traces generated from Gemini Pro chats for manual testing and prompt adaptation.
+- `*_results.csv` — CSV files containing the LLM classifications used for evaluation.
+- `*_mistakes.csv` — Samples where the LLM classification does not match the ground-truth label.

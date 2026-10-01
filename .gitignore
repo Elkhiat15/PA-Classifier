@@ -1,5 +1,4 @@
 docs/extras.txt
-docs/
 
 
 # Byte-compiled / optimized / DLL files
@@ -152,7 +151,7 @@ activemq-data/
 *.sage.py
 
 # Environments
-.env
+# .env
 .envrc
 .venv
 env/
