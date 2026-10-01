@@ -113,7 +113,7 @@ These observations agree with the corner cases identified earlier because the am
 - **Large contexts:** For long contexts, such as tool responses, I need to decide whether to classify only the current event, batch events, or truncate the context.
 - **Trace-level blocking:** If a user input is blocked, the entire trace should be blocked as well. I intentionally do not do this in the current evaluation.
 - **Error handling:** Additional error handling is needed.
-- **Secrets:** The `.env` file must not be public. Deployment platforms provide secret management. I published it only for convenience because the tokens were free anyway.
+- **Secrets:** Regarding the `.env`, Deployment platforms provide secret management. I send it by mail only for convenience because the tokens were free anyway.
 
 ## Future Work for a Large-Scale Project
 

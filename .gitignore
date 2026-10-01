@@ -153,6 +153,7 @@ activemq-data/
 # Environments
 backend/.env
 .env
+env_backup.zip
 .envrc
 .venv
 env/
