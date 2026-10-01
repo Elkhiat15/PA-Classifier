@@ -14,8 +14,10 @@ An internal **operations agent** for ABC (e-commerce and logistics) that uses LL
 2. Clone and go to the destination
    ```bash
    git clone https://github.com/Elkhiat15/PA-Classifier.git
-   
+
    cd PA-Classifier/
+
+   # unzipp env_backup.zip here
    ```
 2. Run:
 
