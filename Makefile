@@ -5,7 +5,7 @@
 # mode with no API keys; set them in .env only for live classification.
 
 .PHONY: help install install-backend install-frontend dev backend frontend \
-        eval lint clean up up-d down logs
+        eval test-eval lint clean up up-d down logs
 
 help:
 	@echo "Targets:"
@@ -14,6 +14,7 @@ help:
 	@echo "  make backend   - run only the FastAPI server"
 	@echo "  make frontend  - run only the Vite dev server"
 	@echo "  make eval      - run the eval harness (pa-eval)"
+	@echo "  make test-eval - run backend/evaluate.py (test set -> CSV)"
 	@echo "  make lint      - ruff + mypy (backend)"
 	@echo "  make clean     - remove build/test artifacts"
 	@echo ""
@@ -66,6 +67,11 @@ logs:
 
 eval:
 	poetry run pa-eval --data eval/data/cases_v1.jsonl --out eval/results/latest
+
+# Run the standalone evaluation script (backend/evaluate.py) over the test
+# dataset; streams predictions to eval/data/test_results.csv.
+test-eval:
+	cd backend && poetry run python evaluate.py
 
 lint:
 	poetry run ruff check .

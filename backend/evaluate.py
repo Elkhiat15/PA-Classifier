@@ -8,14 +8,15 @@ The resulting dataframe has one row per event and contains every flattened
 trace/event field plus the classifier answer fields
 (``decision``, ``confidence``, ``policy_rule_ids``, ``reasoning``).
 
-Usage (the backend package is added to ``sys.path`` automatically)::
+Run from the ``backend/`` directory::
 
-    python eval/data/test.py
+    python evaluate.py
 """
 
 from __future__ import annotations
 
 import json
+import re
 import sys
 import time
 from pathlib import Path
@@ -24,18 +25,19 @@ import pandas as pd
 
 # ---------------------------------------------------------------------------
 # Make the backend `policy_classifier` package importable when this file is
-# executed directly, e.g. `python eval/data/test.py`.
+# executed directly (e.g. `python evaluate.py` from inside `backend/`).
 # ---------------------------------------------------------------------------
-REPO_ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(REPO_ROOT / "backend"))
+BACKEND_DIR = Path(__file__).resolve().parent
+REPO_ROOT = BACKEND_DIR.parent
+sys.path.insert(0, str(BACKEND_DIR))
 
 from policy_classifier import build_model, classify  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
-DATA_PATH = Path(__file__).resolve().parent / "test_data.jsonl"
-OUT_PATH = Path(__file__).resolve().parent / "test_results.csv"
+DATA_PATH = REPO_ROOT / "eval" / "data" / "corner_cases.jsonl"
+OUT_PATH = REPO_ROOT / "eval" / "data" / "corner_cases_test_results.csv"
 
 PROVIDER = "gemini"
 BATCH_SIZE = 5            # save + pause after this many requests
@@ -58,6 +60,17 @@ COLUMNS = [
 ]
 
 
+def _load_json(path: Path):
+    """Load JSON, tolerating trailing commas (the data files aren't strict)."""
+    text = path.read_text(encoding="utf-8")
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        # Remove a comma that appears right before a closing ] or }.
+        cleaned = re.sub(r",(\s*[\]}])", r"\1", text)
+        return json.loads(cleaned)
+
+
 def _save_batch(records: list[dict], *, header: bool) -> None:
     """Append a batch of records to the CSV, writing the header once."""
     df = pd.DataFrame(records, columns=COLUMNS)
@@ -70,8 +83,7 @@ def _save_batch(records: list[dict], *, header: bool) -> None:
 
 
 def main() -> int:
-    with DATA_PATH.open("r", encoding="utf-8") as f:
-        data = json.load(f)
+    data = _load_json(DATA_PATH)
 
     model = build_model(PROVIDER)
 

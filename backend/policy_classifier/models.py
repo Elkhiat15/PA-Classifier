@@ -21,7 +21,8 @@ def build_model(
 ):
     """Build a chat model for the given provider at temperature 0."""
     llm = ChatGoogleGenerativeAI(
-            model="gemini-2.5-flash",
+            # model="gemini-3.5-flash",
+            model="gemini-3.1-flash-lite",
             temperature=0,
             google_api_key=google_api_key or os.environ.get("GOOGLE_API_KEY"),
         )
