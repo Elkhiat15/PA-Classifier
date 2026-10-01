@@ -1,0 +1,18 @@
+# Option A — Colleague has the repo (e.g. cloned from GitHub).
+#
+# Builds the image locally from the Dockerfile in this folder, then runs it.
+# Single command:  docker compose up --build
+#
+# Secrets: the keys live in a local `.env` file next to this file (see
+# .env.example). That file is gitignored and never enters the image.
+
+services:
+  pa-classifier:
+    build:
+      context: .
+    image: khiat/pa-classifier:latest
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    restart: unless-stopped

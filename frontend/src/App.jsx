@@ -28,6 +28,25 @@ function payloadText(event) {
   return JSON.stringify(payload, null, 2)
 }
 
+// ---- Metrics formatting helpers ----
+
+function formatLatency(ms) {
+  if (ms === undefined || ms === null) return '—'
+  return ms >= 1000 ? `${(ms / 1000).toFixed(2)} s` : `${Math.round(ms)} ms`
+}
+
+function formatCost(usd) {
+  if (usd === undefined || usd === null) return '—'
+  if (usd === 0) return '$0.00'
+  if (usd < 0.01) return `$${usd.toFixed(6)}`
+  return `$${usd.toFixed(4)}`
+}
+
+function formatTokens(n) {
+  if (!n) return '0'
+  return n.toLocaleString()
+}
+
 async function classifyEvent(trace, eventId, provider) {
   const res = await fetch(`${API_BASE}/classify`, {
     method: 'POST',
@@ -84,6 +103,39 @@ function App() {
   )
 
   const pendingCount = parsedCount - doneCount
+
+  // Metrics from every completed call, for the run dashboard.
+  const metricsList = useMemo(
+    () =>
+      Object.values(results)
+        .filter((r) => r.status === 'done' && r.metrics)
+        .map((r) => r.metrics),
+    [results],
+  )
+
+  const totalLatency = useMemo(
+    () => metricsList.reduce((sum, m) => sum + (m.latency_ms || 0), 0),
+    [metricsList],
+  )
+  const totalTokens = useMemo(
+    () => metricsList.reduce((sum, m) => sum + (m.total_tokens || 0), 0),
+    [metricsList],
+  )
+  const totalPromptTokens = useMemo(
+    () => metricsList.reduce((sum, m) => sum + (m.prompt_tokens || 0), 0),
+    [metricsList],
+  )
+  const totalCompletionTokens = useMemo(
+    () => metricsList.reduce((sum, m) => sum + (m.completion_tokens || 0), 0),
+    [metricsList],
+  )
+  const totalCost = useMemo(
+    () => metricsList.reduce((sum, m) => sum + (m.estimated_cost_usd || 0), 0),
+    [metricsList],
+  )
+  const calls = metricsList.length
+  const avgLatency = calls ? totalLatency / calls : 0
+  const avgCost = calls ? totalCost / calls : 0
 
   const handleEventChange = (key, value) => {
     setEvents((prev) =>
@@ -384,6 +436,17 @@ function App() {
                       </span>
                     </div>
 
+                    {result.metrics && (
+                      <div className="result-row">
+                        <span className="result-label">Latency / Tokens / Cost</span>
+                        <span className="metrics-inline">
+                          {formatLatency(result.metrics.latency_ms)} ·{' '}
+                          {formatTokens(result.metrics.total_tokens)} tok ·{' '}
+                          {formatCost(result.metrics.estimated_cost_usd)}
+                        </span>
+                      </div>
+                    )}
+
                     <div className="result-row rules-row">
                       <span className="result-label">Policy rules</span>
                       <span className="rule-chips">
@@ -445,6 +508,39 @@ function App() {
           </div>
         )}
       </section>
+
+      {calls > 0 && (
+        <section className="dashboard">
+          <div className="dashboard-head">
+            <h2>Run dashboard</h2>
+            <span className="dashboard-sub">
+              {calls} model call{calls === 1 ? '' : 's'}
+            </span>
+          </div>
+          <div className="dashboard-cards">
+            <div className="dash-card">
+              <span className="dash-label">Latency</span>
+              <span className="dash-value">{formatLatency(totalLatency)}</span>
+              <span className="dash-hint">
+                avg {formatLatency(avgLatency)} / call
+              </span>
+            </div>
+            <div className="dash-card">
+              <span className="dash-label">Tokens</span>
+              <span className="dash-value">{formatTokens(totalTokens)}</span>
+              <span className="dash-hint">
+                {formatTokens(totalPromptTokens)} prompt ·{' '}
+                {formatTokens(totalCompletionTokens)} completion
+              </span>
+            </div>
+            <div className="dash-card">
+              <span className="dash-label">Estimated cost</span>
+              <span className="dash-value">{formatCost(totalCost)}</span>
+              <span className="dash-hint">avg {formatCost(avgCost)} / call</span>
+            </div>
+          </div>
+        </section>
+      )}
     </div>
   )
 }

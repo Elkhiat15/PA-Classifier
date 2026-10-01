@@ -16,9 +16,10 @@ from typing import Any
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from policy_classifier.classifier import classify
+from policy_classifier.classifier import classify_with_metrics
 from policy_classifier.models import build_model
 from policy_classifier.policy import POLICY
 from policy_classifier.schemas import PolicyDecision
@@ -42,10 +43,22 @@ class ClassifyTraceRequest(BaseModel):
     provider: str | None = None
 
 
+class CallMetricsResponse(BaseModel):
+    """Latency / token / cost metrics for one model call."""
+
+    provider: str
+    latency_ms: float
+    prompt_tokens: int
+    completion_tokens: int
+    total_tokens: int
+    estimated_cost_usd: float
+
+
 class ClassifyResponse(PolicyDecision):
     """A policy decision tied to the event it was made for."""
 
     event_id: str
+    metrics: CallMetricsResponse | None = None
 
 
 class ClassifyTraceResponse(BaseModel):
@@ -94,13 +107,15 @@ def _classify_event(
 ) -> ClassifyResponse:
     model = _model(provider)
     try:
-        decision = classify(model, trace, event_id)
+        decision, metrics = classify_with_metrics(model, trace, event_id, provider)
     except StopIteration:
         raise HTTPException(
             status_code=404,
             detail=f"event_id {event_id!r} was not found in the trace.",
         ) from None
-    return ClassifyResponse(event_id=event_id, **decision.model_dump())
+    return ClassifyResponse(
+        event_id=event_id, metrics=metrics.as_dict(), **decision.model_dump()
+    )
 
 
 @app.get("/api/health")
@@ -133,6 +148,15 @@ def classify_trace(request: ClassifyTraceRequest) -> ClassifyTraceResponse:
     return ClassifyTraceResponse(results=results)
 
 
-@app.get("/")
-def root() -> dict[str, str]:
+@app.get("/api/info")
+def info() -> dict[str, str]:
     return {"service": "policy-alignment-classifier", "docs": "/docs"}
+
+
+# Serve the built frontend (frontend/dist, copied to PA_STATIC_DIR at image
+# build time) at "/". Mounted LAST so every /api/* route above matches first.
+# When the directory is absent (e.g. running the backend standalone in dev),
+# the mount is skipped and only the API routes are exposed.
+_static_dir = os.environ.get("PA_STATIC_DIR", "static")
+if os.path.isdir(_static_dir):
+    app.mount("/", StaticFiles(directory=_static_dir, html=True), name="static")

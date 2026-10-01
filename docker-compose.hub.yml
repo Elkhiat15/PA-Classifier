@@ -1,0 +1,20 @@
+# Option B — Colleague pulls the prebuilt image from Docker Hub.
+# They do NOT need the source code, only this file + a local .env.
+#
+# Prerequisites: the image must exist on the Hub, e.g. pushed with:
+#   docker build -t khiat/pa-classifier:latest .
+#   docker push khiat/pa-classifier:latest
+#
+# Single command:  docker compose -f docker-compose.hub.yml up
+#
+# Secrets: keys live in a local `.env` next to this file and are injected at
+# run time — they are NOT in the image.
+
+services:
+  pa-classifier:
+    image: khiat/pa-classifier:latest
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    restart: unless-stopped

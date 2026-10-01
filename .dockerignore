@@ -1,0 +1,26 @@
+# Keep the runtime secrets OUT of the build context / image.
+# The real keys live only in a local .env read at run time.
+**/.env
+**/.env.*
+!**/.env.example
+
+# Python
+**/__pycache__/
+**/*.py[cod]
+**/.venv/
+**/.mypy_cache/
+**/.ruff_cache/
+**/.pytest_cache/
+
+# Node / frontend build artifacts
+**/node_modules/
+**/dist/
+**/.vite/
+
+# VCS, docs, eval, data and OS noise not needed to build the image
+**/.git/
+**/.gitignore
+docs/
+eval/
+**/.DS_Store
+README.md

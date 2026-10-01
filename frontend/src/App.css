@@ -560,3 +560,87 @@
   border-radius: 12px;
   font-size: 16px;
 }
+
+/* ---------- Inline per-event metrics ---------- */
+.metrics-inline {
+  font-family: var(--mono);
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-h);
+  text-align: right;
+}
+
+/* ---------- Run dashboard ---------- */
+.dashboard {
+  margin-top: 8px;
+  padding: 22px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface, var(--bg));
+  box-shadow: var(--shadow);
+  text-align: left;
+}
+
+.dashboard-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.dashboard-head h2 {
+  margin: 0;
+  font-size: 20px;
+  color: var(--text-h);
+}
+
+.dashboard-sub {
+  font-size: 14.5px;
+  color: var(--text);
+}
+
+.dashboard-cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+@media (max-width: 720px) {
+  .dashboard-cards {
+    grid-template-columns: 1fr;
+  }
+}
+
+.dash-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--accent) 5%, var(--code-bg));
+}
+
+.dash-label {
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+.dash-value {
+  font-family: var(--mono);
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-h);
+  line-height: 1.1;
+}
+
+.dash-hint {
+  font-size: 13.5px;
+  color: var(--text);
+}

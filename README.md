@@ -42,6 +42,98 @@ poetry run pa-serve             # http://127.0.0.1:8000
 cd frontend && npm install && npm run dev   # http://localhost:5173
 ```
 
+---
+
+## Run it with Docker (one command for a colleague)
+
+The Docker image contains **both** the compiled React frontend and the FastAPI
+backend. The backend serves the UI at `/` and the API under `/api`, so the whole
+app runs on a **single port** (`8000`) with no CORS or proxy. Open
+<http://localhost:8000> after starting.
+
+**Secrets stay out of the image.** API keys live in a local `.env` file that is
+read at *run time* (`docker compose` injects it). `.env` is gitignored and
+excluded by `.dockerignore`, so it never enters the image or the Docker Hub
+repository. Share the keys with your colleague privately, not via git.
+
+Prerequisite: Docker Desktop (or `podman`) installed.
+
+### Option A — Colleague has the repo (cloned from GitHub)
+
+The image is built locally, then run. One command:
+
+```bash
+cp .env.example .env      # then edit .env and paste your API key(s)
+docker compose up --build
+```
+
+Stop with `Ctrl-C` (or `docker compose down`). Next runs are just
+`docker compose up` (no rebuild needed unless the code changed).
+
+### Option B — Colleague pulls from Docker Hub (no source code needed)
+
+First, **you** build and push the image once:
+
+```bash
+docker login                                   # log in as your Hub user (khiat)
+docker build -t khiat/pa-classifier:latest .
+docker push khiat/pa-classifier:latest
+```
+
+Then your colleague only needs `docker-compose.hub.yml` + a `.env`:
+
+```bash
+cp .env.example .env      # then edit .env and paste your API key(s)
+docker compose -f docker-compose.hub.yml up
+```
+
+This pulls `khiat/pa-classifier:latest` and runs it. Even without compose it is
+one command:
+
+```bash
+docker run --rm -p 8000:8000 --env-file .env khiat/pa-classifier:latest
+```
+
+### Files added for Docker
+
+| file | purpose |
+|------|---------|
+| `Dockerfile` | multi-stage build: Vite frontend → Python/FastAPI runtime |
+| `.dockerignore` | keeps `.env`, `node_modules`, `.git`, etc. out of the image |
+| `docker-compose.yml` | **Option A**: builds and runs locally |
+| `docker-compose.hub.yml` | **Option B**: pulls `khiat/pa-classifier:latest` |
+| `.env.example` | template for the runtime secrets file |
+
+> Optional multi-arch build (so both Intel and Apple-Silicon machines work):
+> ```bash
+> docker buildx build --platform linux/amd64,linux/arm64 \
+>   -t khiat/pa-classifier:latest --push .
+> ```
+
+### Make targets
+
+```bash
+make up     # docker compose up --build   (build + run, foreground)
+make up-d   # docker compose up --build -d (build + run, background)
+make down   # docker compose down          (stop + remove)
+make logs   # docker compose logs -f       (follow logs)
+```
+
+### After you change something
+
+The image copies source **at build time**, so a rebuild is needed for code changes:
+
+| You changed | Run | Notes |
+|-------------|-----|-------|
+| Backend Python (`backend/policy_classifier/*.py`) | `make up` | `--build` copies the new code into the image |
+| Frontend (`frontend/src/*`) | `make up` | React is recompiled during the build |
+| Dependencies (`pyproject.toml`, `poetry.lock`, `package.json`) | `make up` | Re-runs `poetry install` / `npm ci`; use `docker build --no-cache` if stale |
+| Only `.env` (key or `PA_PROVIDER`) | `make down && make up` | Env is injected at run time; no rebuild needed |
+| Nothing (just restart) | `make up` | Cached layers → starts fast |
+
+**Rule of thumb:** code/deps → `make up` (it writes `--build`). Only `.env` → `make down && make up`.
+For plain local dev (no Docker), `make dev` is unchanged.
+
 ## How the frontend connects to the logic
 
 This is the part that matters, so it is worth stating plainly:

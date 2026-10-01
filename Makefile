@@ -5,7 +5,7 @@
 # mode with no API keys; set them in .env only for live classification.
 
 .PHONY: help install install-backend install-frontend dev backend frontend \
-        eval lint clean
+        eval lint clean up up-d down logs
 
 help:
 	@echo "Targets:"
@@ -16,6 +16,12 @@ help:
 	@echo "  make eval      - run the eval harness (pa-eval)"
 	@echo "  make lint      - ruff + mypy (backend)"
 	@echo "  make clean     - remove build/test artifacts"
+	@echo ""
+	@echo "Docker:"
+	@echo "  make up        - build + run via docker compose (http://localhost:8000)"
+	@echo "  make up-d      - same, but detached (background)"
+	@echo "  make down      - stop the docker compose stack"
+	@echo "  make logs      - follow logs of the detached stack (Ctrl-C to exit)"
 
 install: install-backend install-frontend
 
@@ -38,6 +44,25 @@ backend:
 
 frontend:
 	cd frontend && npm run dev
+
+# ---- Docker ---------------------------------------------------------------
+
+# Build the image and run the app in the foreground. Ctrl-C stops it.
+# The frontend and API are both served at http://localhost:8000
+up:
+	docker compose up --build
+
+# Same, but detached (runs in the background).
+up-d:
+	docker compose up --build -d
+
+# Stop and remove the containers (and their network).
+down:
+	docker compose down
+
+# Follow logs of the running (detached) container. Ctrl-C exits.
+logs:
+	docker compose logs -f
 
 eval:
 	poetry run pa-eval --data eval/data/cases_v1.jsonl --out eval/results/latest
